@@ -439,6 +439,24 @@
       "frequency": 4,
       "destination": "Katsuragi Chinatown"
     },
+    "Bush Lane": {
+      "distance": 1,
+      "type": "metro",
+      "line": "Namboku Line",
+      "color": "#00cc00",
+      "frequency": 4,
+      "destination": "Bush Lane"
+    },
+  },
+  "Bush Lane": {
+    "Downtown":{
+      "distance": 1,
+      "type": "metro",
+      "line": "Namboku Line",
+      "color": "#00cc00",
+      "frequency": 4,
+      "destination": "Katsuragi Chinatown"
+    },
     "Lipan Airport": {
       "distance": 1,
       "type": "metro",
