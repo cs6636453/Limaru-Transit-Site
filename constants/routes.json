@@ -1,6 +1,6 @@
 {
   "Kimitsu": {
-    "Taura": {
+    "Kimitsuko": {
       "distance": 1,
       "type": "metro",
       "line": "Kotoha Line",
@@ -16,8 +16,24 @@
       "destination": "Pelle Junction"
     }
   },
-  "Taura": {
+  "Kimitsuko": {
+    "Taura": {
+      "distance": 1,
+      "type": "metro",
+      "line": "Kotoha Line",
+      "color": "#15754c",
+      "destination": "Shinten"
+    },
     "Kimitsu": {
+      "distance": 1,
+      "type": "metro",
+      "line": "Kotoha Line",
+      "color": "#15754c",
+      "destination": "Kimitsu"
+  }
+},
+  "Taura": {
+    "Kimitsuko": {
       "distance": 1,
       "type": "metro",
       "line": "Kotoha Line",
