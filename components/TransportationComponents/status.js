@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 
 const logo = {
-    "Limaru Metro": { src: "/transport/metro.svg", width: 20, height: 20 },
-    "Mainlines": { src: "/transport/train.svg", width: 20, height: 20 },
-    "Bus Services": { src: "/transport/bus.svg", width: 20, height: 20 },
-    "Suburban Lines": { src: "/transport/suburban.svg", width: 20, height: 20},
+    "Limaru Metro": { src: "/transport/metro.svg" },
+    "Mainlines": { src: "/transport/train.svg" },
+    "Bus Services": { src: "/transport/bus.svg" },
+    "Suburban Lines": { src: "/transport/suburban.svg" },
 };
 
 const Status = () => {
     const [statusData, setStatusData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
+        setIsLoading(true);
         fetch(
             "https://script.google.com/macros/s/AKfycbwwRXuVfw8rIlqiWcUV9LLnCXJdhypmyVCs-J4njJuRv5jZd3NOXegTbiZcjo3uYlLaug/exec"
         )
-            .then((response) => response.json())
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then((data) => {
                 const processedData = data.slice(1).reduce((acc, [, route, operator, status]) => {
                     let category = acc.find((cat) => cat.title === operator);
@@ -28,7 +35,11 @@ const Status = () => {
                 }, []);
                 setStatusData(processedData);
             })
-            .catch((error) => console.error("Error fetching data:", error));
+            .catch((error) => {
+                console.error("Error fetching data:", error);
+                setError("Could not load service status. Please try again later.");
+            })
+            .finally(() => setIsLoading(false));
     }, []);
 
     const getStatusColor = (status) => {
@@ -39,43 +50,57 @@ const Status = () => {
             case "Busy":
                 return "bg-yellow-500 text-black";
             case "Partially Open":
+                return "bg-amber-500 text-black";
             case "Normal":
                 return "bg-green-500 text-white";
             default:
                 return "bg-gray-500 text-white";
         }
     };
+    
+    if (isLoading) {
+        return <div className="text-center p-10">Loading service status...</div>
+    }
+    
+    if (error) {
+        return <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md text-center" role="alert">{error}</div>
+    }
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 bg-base-200">
-            {statusData.map((section) => (
-                <div key={section.title} className="bg-white text-black p-4 rounded relative pb-8">
-                    <div className="flex items-center mb-2">
-                        {logo[section.title] && (
-                            <Image
-                                className="mr-2"
-                                src={logo[section.title].src}
-                                alt={section.title}
-                                width={40}
-                                height={40}
-                            />
-                        )}
-                        <h3 className="text-sm sm:text-lg font-semibold">{section.title}</h3>
+        <div className="p-4 font-sans">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {statusData.map((section) => (
+                    <div key={section.title} className="bg-white text-black p-4 rounded-lg shadow-md border border-gray-200">
+                        <div className="flex items-center mb-4 border-b pb-2">
+                            {logo[section.title] && (
+                                <img
+                                    className="mr-3"
+                                    src={logo[section.title].src}
+                                    alt={`${section.title} logo`}
+                                    width={24}
+                                    height={24}
+                                />
+                            )}
+                            <h3 className="text-lg font-bold text-gray-800">{section.title}</h3>
+                        </div>
+                        <ul className="list-none space-y-3">
+                            {section.items.map((item) => (
+                                <li key={item.label} className="flex flex-col p-2 bg-gray-50 rounded-md">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${getStatusColor(item.status)}`}>
+                                            {item.status}
+                                        </span>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
-                    <ul className="list-none">
-                        {section.items.map((item) => (
-                            <li key={item.label} className="flex items-center justify-between mb-1">
-                                <span className="text-xs sm:text-sm">{item.label}</span>
-                                <span className={`px-2 py-1 text-xs sm:text-sm rounded-sm ${getStatusColor(item.status)}`}>
-                                    {item.status}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            ))}
+                ))}
+            </div>
         </div>
     );
 };
 
 export default Status;
+
