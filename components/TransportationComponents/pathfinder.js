@@ -162,6 +162,7 @@ const Pathfinder = () => {
       criteria: selectedTravelOption,
       origin: originLocation.key,
       dest: destinationLocation.key,
+      source: "https://www.limaru.net/transportation",
     });
     
     window.location.href = `${baseUrl}?${params.toString()}`;
