@@ -75,6 +75,38 @@ const Pathfinder = () => {
     fetchData();
   }, []);
 
+  // Effect to parse URL parameters and pre-fill the form
+  useEffect(() => {
+    // This effect runs once the location data is loaded
+    if (allLocations.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const criteriaParam = params.get("criteria");
+      const originKey = params.get("origin");
+      const destKey = params.get("dest");
+
+      // Set travel option from URL if it's a valid one
+      if (criteriaParam && travelOptions.some(opt => opt.value === criteriaParam)) {
+        setSelectedTravelOption(criteriaParam);
+      }
+      
+      // Set origin from URL by finding the location name from its key
+      if (originKey) {
+        const originLocation = allLocations.find(loc => loc.key === originKey);
+        if (originLocation) {
+          setOrigin(originLocation.name);
+        }
+      }
+      
+      // Set destination from URL by finding the location name from its key
+      if (destKey) {
+        const destLocation = allLocations.find(loc => loc.key === destKey);
+        if (destLocation) {
+          setDestination(destLocation.name);
+        }
+      }
+    }
+  }, [allLocations]); // This dependency ensures the effect runs when allLocations is populated
+
   // Effect to handle clicks outside the suggestion boxes
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -162,7 +194,7 @@ const Pathfinder = () => {
       criteria: selectedTravelOption,
       origin: originLocation.key,
       dest: destinationLocation.key,
-      source: "https://www.limaru.net/transportation",
+      source: "https://limaru.net/transportation"
     });
     
     window.location.href = `${baseUrl}?${params.toString()}`;
