@@ -1,22 +1,56 @@
 import React, { useState, useRef, useEffect } from "react";
 
-// Travel options updated
+// --- UI Sub-components ---
 const travelOptions = [
     { value: "fastest", label: "Recommended" },
     { value: "minsta", label: "Minimum Stations" },
     { value: "mintrans", label: "Minimum Transfers" },
 ];
 
-// Custom Hook to manage all transit data fetching and processing
-const useTransitData = () => {
+const LineMarker = ({ lineKey, lineDetails }) => {
+    const lineInfo = lineDetails.get(lineKey) || {};
+    return <div className="inline-flex justify-center items-center w-6 h-6 rounded-full text-black bg-white text-xs font-bold flex-shrink-0 mt-0.5" style={{ boxShadow: `0 0 0 2px ${lineInfo.color || '#ccc'}` }}>{lineKey}</div>;
+};
+
+const BusLinePills = ({ lines, lineDetails }) => {
+    if (!lines || lines.length === 0) return null;
+    return (
+        <div className="flex gap-1 flex-shrink-0">
+            {lines.map(lineKey => {
+                const lineInfo = lineDetails.get(lineKey) || {};
+                return <span key={lineKey} className="text-xs font-semibold px-1.5 py-0.5 border rounded" style={{ color: lineInfo.color, borderColor: lineInfo.color }}>{lineKey}</span>;
+            })}
+        </div>
+    );
+};
+
+
+// --- Main Component ---
+const Pathfinder = () => {
+    // --- STATE MANAGEMENT ---
+    // Data state
     const [displayData, setDisplayData] = useState({ trains: new Map(), buses: [] });
     const [lineDetails, setLineDetails] = useState(new Map());
     const [allLocations, setAllLocations] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState("");
+    const [dataError, setDataError] = useState("");
+    
+    // UI state
+    const [uiError, setUiError] = useState("");
+    const [selectedTravelOption, setSelectedTravelOption] = useState("fastest");
+    const [origin, setOrigin] = useState("");
+    const [destination, setDestination] = useState("");
+    const [originSuggestions, setOriginSuggestions] = useState(null);
+    const [destinationSuggestions, setDestinationSuggestions] = useState(null);
 
+    const originRef = useRef(null);
+    const destinationRef = useRef(null);
+
+    // --- DATA FETCHING & PROCESSING ---
     useEffect(() => {
         const fetchData = async () => {
+            setIsLoading(true);
+            setDataError("");
             try {
                 const [datasetRes, datanodesRes] = await Promise.all([
                     fetch('https://tjt.winsanmwtv.me/api/dataset.json'),
@@ -96,7 +130,11 @@ const useTransitData = () => {
                             currentNode = nextNode;
                         } else { break; }
                     }
-                    stations.sort((a, b) => sequence.indexOf(a.key) - sequence.indexOf(b.key));
+                    stations.sort((a, b) => {
+                        const indexA = sequence.indexOf(a.key);
+                        const indexB = sequence.indexOf(b.key);
+                        return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
+                    });
                 });
                 
                 busStopGroup.sort((a, b) => a.name.localeCompare(b.name));
@@ -105,49 +143,13 @@ const useTransitData = () => {
 
             } catch (e) {
                 console.error("Failed to fetch transit data:", e);
-                setError("Could not load station data. Please try refreshing the page.");
+                setDataError("Could not load station data. Please try refreshing the page.");
             } finally {
                 setIsLoading(false);
             }
         };
         fetchData();
     }, []);
-
-    return { displayData, lineDetails, allLocations, isLoading, error };
-};
-
-
-// --- UI Sub-components ---
-const LineMarker = ({ lineKey, lineDetails }) => {
-    const lineInfo = lineDetails.get(lineKey) || {};
-    return <div className="inline-flex justify-center items-center w-6 h-6 rounded-full text-black bg-white text-xs font-bold flex-shrink-0 mt-0.5" style={{ boxShadow: `0 0 0 2px ${lineInfo.color || '#ccc'}` }}>{lineKey}</div>;
-};
-
-const BusLinePills = ({ lines, lineDetails }) => {
-    if (!lines || lines.length === 0) return null;
-    return (
-        <div className="flex gap-1 flex-shrink-0">
-            {lines.map(lineKey => {
-                const lineInfo = lineDetails.get(lineKey) || {};
-                return <span key={lineKey} className="text-xs font-semibold px-1.5 py-0.5 border rounded" style={{ color: lineInfo.color, borderColor: lineInfo.color }}>{lineKey}</span>;
-            })}
-        </div>
-    );
-};
-
-
-// --- Main Component ---
-const Pathfinder = () => {
-    const { displayData, lineDetails, allLocations, isLoading, error } = useTransitData();
-    
-    const [selectedTravelOption, setSelectedTravelOption] = useState("fastest");
-    const [origin, setOrigin] = useState("");
-    const [destination, setDestination] = useState("");
-    const [originSuggestions, setOriginSuggestions] = useState(null);
-    const [destinationSuggestions, setDestinationSuggestions] = useState(null);
-
-    const originRef = useRef(null);
-    const destinationRef = useRef(null);
 
     // Effect to parse URL parameters
      useEffect(() => {
@@ -194,12 +196,12 @@ const Pathfinder = () => {
     const handleSwap = () => { setOrigin(destination); setDestination(origin); };
 
     const handleFindRoute = () => {
-        setError("");
+        setUiError("");
         const originLocation = allLocations.find(loc => loc.name.toLowerCase() === origin.toLowerCase());
         const destinationLocation = allLocations.find(loc => loc.name.toLowerCase() === destination.toLowerCase());
 
-        if (!originLocation) return setError("Invalid origin. Please select a valid station from the list.");
-        if (!destinationLocation) return setError("Invalid destination. Please select a valid station from the list.");
+        if (!originLocation) return setUiError("Invalid origin. Please select a valid station from the list.");
+        if (!destinationLocation) return setUiError("Invalid destination. Please select a valid station from the list.");
 
         const params = new URLSearchParams({ criteria: selectedTravelOption, origin: originLocation.key, dest: destinationLocation.key, source: "https://limaru.net/transportation" });
         window.location.href = `https://tjt.winsanmwtv.me/mytripquery/?${params.toString()}`;
@@ -237,6 +239,8 @@ const Pathfinder = () => {
     };
 
     if (isLoading) return <div className="text-center p-10">Loading station data...</div>;
+
+    const error = uiError || dataError;
 
     return (
         <div className="bg-gray-100 p-6 rounded-lg shadow-lg w-full max-w-4xl mx-auto font-sans">
