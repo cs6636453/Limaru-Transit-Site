@@ -203,7 +203,7 @@ const Pathfinder = () => {
         if (!originLocation) return setUiError("Invalid origin. Please select a valid station from the list.");
         if (!destinationLocation) return setUiError("Invalid destination. Please select a valid station from the list.");
 
-        const params = new URLSearchParams({ criteria: selectedTravelOption, origin: originLocation.key, dest: destinationLocation.key, source: "https://limaru.net/transportation" });
+        const params = new URLSearchParams({ criteria: selectedTravelOption, origin: originLocation.key, dest: destinationLocation.key, source: "limaru.net" });
         window.location.href = `https://tjt.winsanmwtv.me/mytripquery/?${params.toString()}`;
     };
   
