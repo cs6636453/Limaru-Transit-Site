@@ -84,21 +84,42 @@ const Pathfinder = () => {
                     .map(loc => ({ name: loc.name, key: loc.key, type: loc.type, lines: stationLinesMap.get(loc.key) || [] }));
                 setAllLocations(locations);
 
+                // --- MODIFIED SECTION ---
                 const trainLineGroups = new Map();
                 const busStopGroup = [];
+                const lineGroupPrefixes = ['LP', 'TN']; // Define the prefixes for grouping
+
                 locations.forEach(loc => {
                     if (loc.type === 'train') {
+                        // Use a Set to add a station to a merged group only once
+                        const uniqueGroupKeys = new Set(); 
+                        
                         loc.lines.forEach(lineKey => {
                             if (!lines.has(lineKey)) return;
-                            if (!trainLineGroups.has(lineKey)) trainLineGroups.set(lineKey, []);
-                            if (!trainLineGroups.get(lineKey).some(s => s.key === loc.key)) {
-                                trainLineGroups.get(lineKey).push(loc);
+
+                            // Find if the lineKey starts with a defined prefix
+                            const matchingPrefix = lineGroupPrefixes.find(p => lineKey.startsWith(p));
+                            // Use the prefix as the group key, or the original lineKey if no prefix matches
+                            const groupKey = matchingPrefix || lineKey;
+                            uniqueGroupKeys.add(groupKey);
+                        });
+
+                        // Add the station to each of its unique groups
+                        uniqueGroupKeys.forEach(groupKey => {
+                            if (!trainLineGroups.has(groupKey)) {
+                                trainLineGroups.set(groupKey, []);
+                            }
+                            // Ensure station isn't added twice to the same group
+                            if (!trainLineGroups.get(groupKey).some(s => s.key === loc.key)) {
+                                trainLineGroups.get(groupKey).push(loc);
                             }
                         });
+
                     } else {
                         busStopGroup.push(loc);
                     }
                 });
+                // --- END MODIFIED SECTION ---
 
                 const lineTermini = dataset.terminus || {};
                 trainLineGroups.forEach((stations, lineKey) => {
@@ -274,4 +295,3 @@ const Pathfinder = () => {
 };
 
 export default Pathfinder;
-
